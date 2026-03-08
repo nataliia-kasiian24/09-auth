@@ -1,13 +1,18 @@
-import React from 'react';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {children}
-    </div>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    router.refresh();
+  }, [router]);
+
+  return <div className="auth-container">{children}</div>;
 }

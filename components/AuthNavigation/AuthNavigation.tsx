@@ -2,21 +2,21 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/lib/store/authStore' 
+import { useAuthStore } from '@/lib/store/authStore';
 import { clientApi } from '@/lib/api/clientApi';
 import css from './AuthNavigation.module.css';
 
 export const AuthNavigation = () => {
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const router = useRouter();
 
   const handleLogout = async () => {
     try {
       await clientApi.logout();
-      logout(); 
-      router.push('/sign-in'); 
-    } catch (error) {
-      console.error('Logout failed:', error);
+      logout();
+      router.push('/sign-in');
+    } catch {
+      console.error('Logout failed');
     }
   };
 
@@ -24,6 +24,12 @@ export const AuthNavigation = () => {
     <ul className={css.navigationList}>
       {isAuthenticated ? (
         <>
+          {user && (
+            <li className={css.navigationItem}>
+              <span className={css.userEmail}>{user.email}</span>
+            </li>
+          )}
+
           <li className={css.navigationItem}>
             <Link href="/profile" className={css.navigationLink}>
               Profile
