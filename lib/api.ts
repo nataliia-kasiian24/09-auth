@@ -1,4 +1,4 @@
-import type { Note, NoteTag } from '../types/note';
+import type { Note } from '../types/note';
 
 type CreateNoteInput = Omit<Note, 'id' | 'createdAt' | 'updatedAt'>;
 
