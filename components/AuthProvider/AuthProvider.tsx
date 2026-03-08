@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/lib/store/useAuthStore';
+import { useAuthStore } from '@/lib/store/authStore';
 import { clientApi } from '@/lib/api/clientApi';
 import { Loader } from '@/components/Loader/Loader'; 
 
