@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { NoteTag } from '@/types/note';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNoteStore } from '@/lib/store/noteStore';
-import { createNote } from '@/lib/api'; 
+import { clientApi } from '@/lib/api/clientApi';
 import { Note } from '@/types/note';
 import css from './NoteForm.module.css';
 
@@ -18,7 +18,7 @@ export default function NoteForm() {
 
  
   const mutation = useMutation({
-    mutationFn: (newNote: CreateNoteInput) => createNote(newNote),
+    mutationFn: (newNote: CreateNoteInput) => clientApi.createNote(newNote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       
