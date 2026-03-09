@@ -3,7 +3,6 @@ import { serverApi } from '@/lib/api/serverApi';
 import { notFound } from 'next/navigation';
 import css from './ProfilePage.module.css';
 import Image from 'next/image';
-import { User } from '@/types/user';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -12,17 +11,19 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilePage() {
+  
   const response = await serverApi.checkSession();
 
-  if (!response) {
+ 
+  if (!response || response.status !== 200 || !response.data) {
     return notFound();
   }
 
-  const userData = response as unknown as User;
+  
+  const user = response.data;
 
-  const user = 'data' in userData ? (userData.data as User) : userData;
-
-  if (!user || !user.email) {
+  
+  if (!user.email) {
     return notFound();
   }
 

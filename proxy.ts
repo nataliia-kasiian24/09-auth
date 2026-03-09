@@ -3,6 +3,9 @@ import type { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { axiosInstance } from './lib/api/api';
 
+const PRIVATE_ROUTES = ['/profile', '/notes'];
+const AUTH_ROUTES = ['/sign-in', '/sign-up'];
+
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const cookieStore = await cookies();
@@ -15,15 +18,14 @@ export default async function proxy(request: NextRequest) {
 
   if (!accessToken && refreshToken) {
     try {
-      const response = await axiosInstance.get('/auth/session', {
-        headers: {
-          Cookie: `refreshToken=${refreshToken}`,
-        },
+      const allCookies = cookieStore.toString();
+
+    const response = await axiosInstance.get('/auth/session', {
+      headers: { Cookie: allCookies },
       });
 
       if (response.status === 200) {
         isAuthenticated = true;
-
         setCookieHeader = response.headers['set-cookie'] || null;
       }
     } catch {
@@ -31,8 +33,10 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.includes(route));
-  const isAuthRoute = AUTH_ROUTES.some(route => pathname.includes(route));
+  const isPrivateRoute = PRIVATE_ROUTES.some(route =>
+    pathname.startsWith(route)
+  );
+  const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
 
   let response: NextResponse;
 
@@ -52,9 +56,6 @@ export default async function proxy(request: NextRequest) {
 
   return response;
 }
-
-const PRIVATE_ROUTES = ['/profile', '/notes'];
-const AUTH_ROUTES = ['/sign-in', '/sign-up'];
 
 export const config = {
   matcher: ['/profile/:path*', '/notes/:path*', '/sign-in', '/sign-up'],
