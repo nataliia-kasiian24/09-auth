@@ -1,45 +1,41 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { axiosInstance } from './lib/api/api'; 
+import { cookies } from 'next/headers';
+import { axiosInstance } from './lib/api/api';
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const cookieStore = await cookies();
 
-  const accessToken = request.cookies.get('accessToken')?.value;
-  const refreshToken = request.cookies.get('refreshToken')?.value;
+  const accessToken = cookieStore.get('accessToken')?.value;
+  const refreshToken = cookieStore.get('refreshToken')?.value;
 
   let isAuthenticated = !!accessToken;
-  let newCookies: string[] = [];
+  let setCookieHeader: string[] | null = null;
 
-  
   if (!accessToken && refreshToken) {
     try {
-      
       const response = await axiosInstance.get('/auth/session', {
-        headers: { 
-          Cookie: `refreshToken=${refreshToken}` 
+        headers: {
+          Cookie: `refreshToken=${refreshToken}`,
         },
       });
 
       if (response.status === 200) {
         isAuthenticated = true;
-        
-        const setCookieHeader = response.headers['set-cookie'];
-        if (setCookieHeader) {
-          newCookies = setCookieHeader;
-        }
+
+        setCookieHeader = response.headers['set-cookie'] || null;
       }
     } catch {
       isAuthenticated = false;
     }
   }
 
-  const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
-  const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
+  const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.includes(route));
+  const isAuthRoute = AUTH_ROUTES.some(route => pathname.includes(route));
 
   let response: NextResponse;
 
-  
   if (isPrivateRoute && !isAuthenticated) {
     response = NextResponse.redirect(new URL('/sign-in', request.url));
   } else if (isAuthRoute && isAuthenticated) {
@@ -48,19 +44,9 @@ export default async function proxy(request: NextRequest) {
     response = NextResponse.next();
   }
 
-  
-  if (newCookies.length > 0) {
-    newCookies.forEach(cookieString => {
-      
-     const [parts] = cookieString.split('; ');
-      const [name, value] = parts.split('=');
-      
-      response.cookies.set(name, value, {
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-      });
+  if (setCookieHeader) {
+    setCookieHeader.forEach(cookie => {
+      response.headers.append('Set-Cookie', cookie);
     });
   }
 
