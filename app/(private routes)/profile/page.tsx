@@ -31,7 +31,7 @@ export default async function ProfilePage() {
       <div className={css.profileCard}>
         <div className={css.header}>
           <h1 className={css.formTitle}>Profile Page</h1>
-          <Link href="#" prefetch={false} className={css.editProfileButton}>
+          <Link href="/profile/edit" prefetch={false} className={css.editProfileButton}>
             Edit Profile
           </Link>
         </div>

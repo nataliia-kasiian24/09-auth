@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { serverApi } from './lib/api/serverApi';
-
-const PRIVATE_ROUTES = ['/profile', '/notes'];
-const AUTH_ROUTES = ['/sign-in', '/sign-up'];
+import { axiosInstance } from './lib/api/api'; 
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -12,34 +9,66 @@ export default async function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get('refreshToken')?.value;
 
   let isAuthenticated = !!accessToken;
+  let newCookies: string[] = [];
 
+  
   if (!accessToken && refreshToken) {
     try {
-      const sessionResponse = await serverApi.checkSession();
+      
+      const response = await axiosInstance.get('/auth/session', {
+        headers: { 
+          Cookie: `refreshToken=${refreshToken}` 
+        },
+      });
 
-      if (sessionResponse && sessionResponse.status === 200) {
+      if (response.status === 200) {
         isAuthenticated = true;
+        
+        const setCookieHeader = response.headers['set-cookie'];
+        if (setCookieHeader) {
+          newCookies = setCookieHeader;
+        }
       }
     } catch {
       isAuthenticated = false;
     }
   }
 
-  const isPrivateRoute = PRIVATE_ROUTES.some(route =>
-    pathname.startsWith(route)
-  );
+  const isPrivateRoute = PRIVATE_ROUTES.some(route => pathname.startsWith(route));
   const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
 
+  let response: NextResponse;
+
+  
   if (isPrivateRoute && !isAuthenticated) {
-    return NextResponse.redirect(new URL('/sign-in', request.url));
+    response = NextResponse.redirect(new URL('/sign-in', request.url));
+  } else if (isAuthRoute && isAuthenticated) {
+    response = NextResponse.redirect(new URL('/', request.url));
+  } else {
+    response = NextResponse.next();
   }
 
-  if (isAuthRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/', request.url));
+  
+  if (newCookies.length > 0) {
+    newCookies.forEach(cookieString => {
+      
+     const [parts] = cookieString.split('; ');
+      const [name, value] = parts.split('=');
+      
+      response.cookies.set(name, value, {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+      });
+    });
   }
 
-  return NextResponse.next();
+  return response;
 }
+
+const PRIVATE_ROUTES = ['/profile', '/notes'];
+const AUTH_ROUTES = ['/sign-in', '/sign-up'];
 
 export const config = {
   matcher: ['/profile/:path*', '/notes/:path*', '/sign-in', '/sign-up'],
