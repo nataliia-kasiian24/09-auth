@@ -24,18 +24,18 @@ export const AuthNavigation = () => {
     <ul className={css.navigationList}>
       {isAuthenticated ? (
         <>
-          {user && (
-            <li className={css.navigationItem}>
-              <span className={css.userEmail}>{user.email}</span>
-            </li>
-          )}
-
           <li className={css.navigationItem}>
-            <Link href="/profile" className={css.navigationLink}>
+            <Link
+              href="/profile"
+              prefetch={false}
+              className={css.navigationLink}
+            >
               Profile
             </Link>
           </li>
+
           <li className={css.navigationItem}>
+            <p className={css.userEmail}>{user?.email || 'User email'}</p>
             <button onClick={handleLogout} className={css.logoutButton}>
               Logout
             </button>
@@ -44,13 +44,22 @@ export const AuthNavigation = () => {
       ) : (
         <>
           <li className={css.navigationItem}>
-            <Link href="/sign-in" className={css.navigationLink}>
+            <Link
+              href="/sign-in"
+              prefetch={false}
+              className={css.navigationLink}
+            >
               Login
             </Link>
           </li>
+
           <li className={css.navigationItem}>
-            <Link href="/sign-up" className={css.navigationLink}>
-              Register
+            <Link
+              href="/sign-up"
+              prefetch={false}
+              className={css.navigationLink}
+            >
+              Sign up
             </Link>
           </li>
         </>

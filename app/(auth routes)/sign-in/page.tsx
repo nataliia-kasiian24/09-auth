@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { clientApi } from '@/lib/api/clientApi';
+import { useAuthStore } from '@/lib/store/authStore';
 import css from './SignInPage.module.css';
 
 export default function SignInPage() {
   const router = useRouter();
+
+  const { setAuth } = useAuthStore();
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -19,17 +23,21 @@ export default function SignInPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const loginData = { email, password };
-
     try {
-      await clientApi.login(loginData);
+      const user = await clientApi.login({ email, password });
+
+      if (user) {
+        setAuth(user);
+      }
+
       router.push('/profile');
+      router.refresh();
     } catch (err: unknown) {
       const errorResponse = err as {
         response?: { data?: { message?: string } };
       };
       setError(
-        errorResponse.response?.data?.message || 'Invalid email or password'
+        errorResponse.response?.data?.message || 'Authentication failed'
       );
     } finally {
       setIsLoading(false);
@@ -38,9 +46,8 @@ export default function SignInPage() {
 
   return (
     <main className={css.mainContent}>
+      <h1 className={css.formTitle}>Sign in</h1>
       <form className={css.form} onSubmit={handleSubmit}>
-        <h1 className={css.formTitle}>Sign in</h1>
-
         <div className={css.formGroup}>
           <label htmlFor="email">Email</label>
           <input
@@ -50,6 +57,7 @@ export default function SignInPage() {
             className={css.input}
             required
             disabled={isLoading}
+            autoComplete="email"
           />
         </div>
 
@@ -62,6 +70,7 @@ export default function SignInPage() {
             className={css.input}
             required
             disabled={isLoading}
+            autoComplete="current-password"
           />
         </div>
 
@@ -71,7 +80,7 @@ export default function SignInPage() {
             className={css.submitButton}
             disabled={isLoading}
           >
-            {isLoading ? 'Logging in...' : 'Log in'}
+            {isLoading ? 'Signing in...' : 'Login'}
           </button>
         </div>
 

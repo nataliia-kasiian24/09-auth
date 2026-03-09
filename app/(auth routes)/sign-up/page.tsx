@@ -1,11 +1,15 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { clientApi } from '@/lib/api/clientApi';
+import { useAuthStore } from '@/lib/store/authStore';
 import css from './SignUpPage.module.css';
 
 export default function SignUpPage() {
   const router = useRouter();
+  const { setAuth } = useAuthStore();
+
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -19,16 +23,17 @@ export default function SignUpPage() {
     const password = formData.get('password') as string;
 
     try {
-      await clientApi.register({ email, password });
+      const user = await clientApi.register({ email, password });
+
+      if (user) {
+        setAuth(user);
+      }
+
       router.push('/profile');
+      router.refresh();
     } catch (err: unknown) {
-      const errorResponse = err as {
-        response?: { data?: { message?: string } };
-      };
-      setError(
-        errorResponse.response?.data?.message ||
-          'Registration failed. Please try again.'
-      );
+      const errorData = err as { response?: { data?: { message?: string } } };
+      setError(errorData.response?.data?.message || 'Registration failed');
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +54,6 @@ export default function SignUpPage() {
             disabled={isLoading}
           />
         </div>
-
         <div className={css.formGroup}>
           <label htmlFor="password">Password</label>
           <input
@@ -61,7 +65,6 @@ export default function SignUpPage() {
             disabled={isLoading}
           />
         </div>
-
         <div className={css.actions}>
           <button
             type="submit"
@@ -71,7 +74,6 @@ export default function SignUpPage() {
             {isLoading ? 'Registering...' : 'Register'}
           </button>
         </div>
-
         {error && <p className={css.error}>{error}</p>}
       </form>
     </main>
